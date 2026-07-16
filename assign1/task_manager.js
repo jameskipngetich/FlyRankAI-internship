@@ -40,6 +40,19 @@ app.get('/tasks/:id', (req,res) => {
 	res.json(task);
 });
 
+// POST - add a task
+app.post('/tasks', (req,res) => {
+	if (!req.body.name) return res.status(422).json({ "error" : "Task to be created needs a name"});
+	const newTask = {
+		id: tasks.length + 1 ,
+		name: req.body.name,
+		description: req.body.description,
+		done: 'False'
+	};
+	tasks.push(newTask);
+	res.status(201).json(newTask);
+});
+
 // start the server
 app.listen( port, hostname, () => {
 	console.log(`Task API is listening at http://${hostname}:${port}/`);

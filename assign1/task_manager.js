@@ -53,6 +53,25 @@ app.post('/tasks', (req,res) => {
 	res.status(201).json(newTask);
 });
 
+//PUT -update
+app.put('/tasks/:id', (req,res) => {
+	const task = tasks.find(t => t.id === parseInt(req.params.id));
+	if (!task) return res.status(404).json({ "error" : `Task ${req.params.id} N O T  F O U N D`});
+	task.name = req.params.name;
+	task.description = req.params.description;
+	task.done = req.params.done;
+	res.status(200).json(task);
+});
+
+//DELETE
+app.delete('/tasks/:id', (req,res) => {
+	const taskIndex = tasks.findIndex(t => t.id === parseInt(req.params.id));
+	if (taskIndex === -1 ) return res.status(404).json({ "error" : `Task ${req.params.id} N O T  F O U N D`});
+	const deletedTask = tasks.splice(taskIndex, 1);
+	res.status(204).send("No Content - Success nothing to say");
+	res.json(deletedTask[0]);
+});
+
 // start the server
 app.listen( port, hostname, () => {
 	console.log(`Task API is listening at http://${hostname}:${port}/`);

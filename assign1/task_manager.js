@@ -1,11 +1,36 @@
 const express = require('express');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
+//database imports sqlite
+const { DatabaseSync } = require('node:sqlite');
+const database = new DatabaseSync('./tasks.db');
 
 const app = express();
 
 const port = 8080;
 const hostname = '127.0.0.1';
+
+// Setting up the database
+database.exec(`
+	CREATE TABLE IF NOT EXISTS tasks(
+		id INT PRIMARY KEY,
+		name TEXT,
+		description TEXT,
+		done BOOLEAN
+		)
+`);
+
+// inserting values to table
+const insert = database.prepare('INSERT INTO tasks(id,name,description,done) values(?,?,?,?)');
+
+const count = database
+	.prepare('SELECT COUNT(*) AS total FROM tasks')
+	.get();
+if (count.total === 0){
+	insert.run(1,'Security Audit', 'Go through overnight security logs', 1);
+	insert.run(2,'Sprint meeting', 'Provide overnight securiy report at the sprint meeting',0);
+	insert.run(3,'Bruteforce alert script','Write, test and deploy a script to alert incase of password bruteforce attack to the system',0);
+}
 
 // middleware for parsing json
 app.use(express.json());

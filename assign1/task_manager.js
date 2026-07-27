@@ -225,12 +225,23 @@ app.post('/tasks', (req,res) => {
  */
 //PUT -update
 app.put('/tasks/:id', (req,res) => {
-	const task = tasks.find(t => t.id === parseInt(req.params.id));
-	if (!task) return res.status(404).json({ "error" : `Task ${req.params.id} N O T  F O U N D`});
-	task.name = req.body.name ?? task.name;
-	task.description = req.body.description ?? task.description;
-	task.done = req.body.done ?? task.done;
-	res.status(200).json(task);
+	const query = database.prepare('SELECT * FROM tasks WHERE id= ?');
+	const update = database.prepare('UPDATE tasks SET name = ?, description = ?, done = ? where id = ?');
+	const current = query.get(req.params.id);
+	const name = req.body.name ?? current.name;
+	const description = req.body.description ?? current.description;
+	const done = req.body.done ?? current.done;
+	const results = update.run(name,description,done,req.params.id);
+
+	if (results.changes === 0) {
+		return res.status(404).json({
+			error: `Task ${req.params.id} N O T  F O U N D`
+		})
+	}
+	
+
+	const updatedTask = query.get(req.params.id);
+	res.status(200).json(updatedTask);
 });
 
 /**
@@ -254,9 +265,9 @@ app.put('/tasks/:id', (req,res) => {
  */
 //DELETE
 app.delete('/tasks/:id', (req,res) => {
-	const taskIndex = tasks.findIndex(t => t.id === parseInt(req.params.id));
-	if (taskIndex === -1 ) return res.status(404).json({ "error" : `Task ${req.params.id} N O T  F O U N D`});
-	const deletedTask = tasks.splice(taskIndex, 1);
+	const deleteP = database.prepare('DELETE FROM tasks WHERE id = ?');
+	const result = deleteP.run(req.params.id);
+	if (result.changes === 0) return res.status(404).json({ "error" : `Task ${req.params.id} N O T  F O U N D`});
 	res.status(204).send("No Content - Success nothing to say");
 
 });

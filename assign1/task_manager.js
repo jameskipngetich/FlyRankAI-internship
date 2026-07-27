@@ -13,23 +13,23 @@ const hostname = '127.0.0.1';
 // Setting up the database
 database.exec(`
 	CREATE TABLE IF NOT EXISTS tasks(
-		id INT PRIMARY KEY,
+		id INTEGER PRIMARY KEY,
 		name TEXT,
 		description TEXT,
-		done BOOLEAN
+		done TEXT
 		)
 `);
 
 // inserting values to table
-const insert = database.prepare('INSERT INTO tasks(id,name,description,done) values(?,?,?,?)');
+const insert = database.prepare('INSERT INTO tasks(name,description,done) values(?,?,?)');
 
 const count = database
 	.prepare('SELECT COUNT(*) AS total FROM tasks')
 	.get();
 if (count.total === 0){
-	insert.run(1,'Security Audit', 'Go through overnight security logs', 1);
-	insert.run(2,'Sprint meeting', 'Provide overnight securiy report at the sprint meeting',0);
-	insert.run(3,'Bruteforce alert script','Write, test and deploy a script to alert incase of password bruteforce attack to the system',0);
+	insert.run('Security Audit', 'Go through overnight security logs', 'True');
+	insert.run('Sprint meeting', 'Provide overnight securiy report at the sprint meeting','False');
+	insert.run('Bruteforce alert script','Write, test and deploy a script to alert incase of password bruteforce attack to the system','False');
 }
 
 // middleware for parsing json
@@ -62,12 +62,12 @@ app.use(
 );
 
 //in-memory list of tasks
-let tasks = [
+/*let tasks = [
 	{ id: 1, name: 'Security audit', description: 'Go through overnight security logs', done:'True'},
 	{ id: 2, name: 'Sprint meeting', description: 'Provide overnight security report at the sprint meeting', done:'False'},
 	{ id: 3, name: 'Bruteforce alert script', description: 'Write, test and deploy a scrip to alert incase of password bruteforce attack to the system', done:'False'}
 ];
-
+*/
 // GET /   api description
 app.get('/', (req, res) => {
 	res.status(200);
@@ -105,6 +105,9 @@ app.get('/health', (req,res) => {
  */
 // GET /task
 app.get('/tasks', (req,res) => {
+	const query = database.prepare('SELECT * FROM tasks');
+	const rows = query.all();
+	const tasks = JSON.stringify(rows);
 	res.status(200).json(tasks);
 });
 
@@ -131,7 +134,10 @@ app.get('/tasks', (req,res) => {
  */
 // GET /tasks/:id
 app.get('/tasks/:id', (req,res) => {
-	const task = tasks.find(t => t.id === parseInt(req.params.id));
+	const query = database.prepare('SELECT * FROM tasks WHERE id= ?');
+	const row = query.get(req.params.id);
+	const task = JSON.stringify(row);
+//	const task = tasks.find(t => t.id === parseInt(req.params.id));
 	if (!task) return res.status(404).json({ "error" : `Task ${req.params.id} N O T  F O U N D`});
 	res.json(task);
 });
@@ -165,13 +171,23 @@ app.get('/tasks/:id', (req,res) => {
 // POST - add a task
 app.post('/tasks', (req,res) => {
 	if (!req.body.name) return res.status(422).json({ "error" : "Task to be created needs a name"});
-	const newTask = {
+	const insert = database.prepare('INSERT INTO tasks(name,description,done) values(?,?,?)');
+	const name = req.body.name;
+	const description = req.body.description;
+	const done = 'False';
+	insert.run(name,description,done);
+	const query = database.prepare('SELECT * FROM tasks WHERE name= ?');
+	const row = query.get(name);
+	const newTask = JSON.stringify(row);
+
+
+/*	const newTask = {
 		id: tasks.length + 1 ,
 		name: req.body.name,
 		description: req.body.description,
 		done: 'False'
 	};
-	tasks.push(newTask);
+	tasks.push(newTask);*/
 	res.status(201).json(newTask);
 });
 
